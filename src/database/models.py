@@ -27,9 +27,11 @@ class Mention(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
 
     # Sentiment & crisis fields (nullable prior to analysis or if processing is pending)
-    sentiment: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
+    sentiment: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
     sentiment_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    key_entities: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    keywords: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     severity_rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 

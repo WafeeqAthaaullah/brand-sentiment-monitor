@@ -2,13 +2,6 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 SentimentType = Literal["Positive", "Neutral", "Negative"]
-CategoryType = Literal[
-    "Product Quality",
-    "Customer Service",
-    "Outage/Bug",
-    "Pricing",
-    "General PR",
-]
 
 
 class SentimentAnalysis(BaseModel):
@@ -24,9 +17,21 @@ class SentimentAnalysis(BaseModel):
         le=1.0,
         description="Normalized sentiment score ranging from -1.0 (most negative) to 1.0 (most positive).",
     )
-    category: CategoryType = Field(
+    category: str = Field(
         ...,
-        description="Category classification indicating the core focus/issue of the post.",
+        description="Primary operational category in Title Case, 2-3 words max (e.g., 'Battery Degradation', 'UI Glitch', 'Customer Service')",
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Top 2-4 granular topic tags",
+    )
+    key_entities: list[str] = Field(
+        default_factory=list,
+        description="Key brands, products, competitors, or people mentioned",
+    )
+    keywords: list[str] = Field(
+        default_factory=list,
+        description="Top 3-5 operational keywords",
     )
     severity_rating: int = Field(
         ...,
@@ -38,4 +43,3 @@ class SentimentAnalysis(BaseModel):
         ...,
         description="Concise one-sentence summary or justification of the sentiment assessment.",
     )
-

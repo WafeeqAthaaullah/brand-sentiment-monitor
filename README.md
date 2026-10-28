@@ -3,37 +3,39 @@
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=for-the-badge&logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-API-orange?style=for-the-badge)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-WAL--Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-An automated, end-to-end AI platform that ingests real-time brand telemetry from social video feeds, performs structured sentiment analysis using high-throughput open LLMs via the Groq API, logs telemetry into SQLite with built-in deduplication, and alerts teams to potential PR crises through an interactive Streamlit analytics dashboard.
+An automated, event-driven brand intelligence and crisis monitoring platform. The system ingests social telemetry and user comment threads, performs structured sentiment analysis and open-ended topic discovery using high-throughput LLMs via the Groq API, persists optimized telemetry in SQLite, and provides interactive analytics alongside an AI-powered telemetry Q&A agent.
 
 ---
 
 ## Architecture Overview
 
 ```mermaid
-flowchart LR
-    A[YouTube Data API v3] --> B[Ingestion Manager]
-    B --> C{SQLite Deduplication Check}
+flowchart TD
+    A[YouTube Data API v3] -->|Video Metadata + Top Comments| B[Ingestion Manager]
+    B --> C{SQLite O1 Batch Deduplication}
     C -->|New Record| D[Groq LLM Engine]
-    C -->|Duplicate ID| E[Skip Execution]
-    D --> F[Pydantic v2 Validation]
-    F --> G[(SQLite Database)]
-    G --> H[Streamlit Analytics UI]
-    F -->|Severity >= 7| I[PR Response Draft Generator]
-    I --> J[Slack Webhook / Terminal Alert]
+    C -->|Duplicate ID| E[Skip Execution & Save Tokens]
+    D --> F[Pydantic v2 Structured Output]
+    F -->|Sentiment, Entities, Keywords, Severity| G[(SQLite Database - WAL Mode)]
+    G --> H[📊 Analytics Dashboard]
+    G --> I[💬 Ask Your Telemetry Q&A Agent]
+    F -->|Severity >= 7| J[🚨 PR Crisis Mitigation Generator]
+    J --> K[Slack Webhook / Terminal Alerts]
 ```
 
 ---
 
 ## Key Features
 
-* **Live Data Ingestion:** Collects recent video metadata, titles, and public commentary using the YouTube Data API v3.
-* **Structured LLM Analysis:** Employs Pydantic v2 schemas and Groq inference (`openai/gpt-oss-20b` / Llama models) to evaluate post sentiment, assign floating-point sentiment scores (-1.0 to +1.0), categorize operational topics, and calculate a severity rating (1 to 10).
-* **Data Persistence & Deduplication:** Stores structured records in SQLite via SQLAlchemy ORM, automatically bypassing previously analyzed posts to eliminate redundant API token spend.
-* **Automated Crisis Mitigation:** Detects severe negative posts (severity ≥ 7/10) and automatically generates executive PR mitigation statements and webhook notifications.
-* **Interactive Analytics UI:** Displays visual metrics, time-series distributions, and category breakdowns via Streamlit and Plotly Express.
+* **Multi-Source Video & Comment Ingestion:** Collects video titles, descriptions, and top public comment threads using YouTube Data API v3 to capture true user sentiment beyond creator titles.
+* **Dynamic Open-Ended Taxonomy:** Eliminates hardcoded category limits. The LLM dynamically discovers operational categories, sub-tags, named entities (brands, competitors, individuals), and key operational keywords.
+* **High-Performance SQLite Storage:** Engineered with Write-Ahead Logging (WAL) for non-blocking concurrent reads/writes, explicit index strategies, native JSON array storage, and batch $O(1)$ deduplication checks.
+* **"Ask Your Telemetry" AI Q&A Agent:** Interactive natural language synthesis tab allowing brand managers to query stored telemetry (e.g., *"What are the top user complaints this week?"*) with structured bullet insights.
+* **Automated PR Crisis Engine:** Detects high-risk records ($\ge 7/10$ severity) and automatically drafts executive PR mitigation responses with webhook alerts.
 
 ---
 
@@ -43,11 +45,11 @@ flowchart LR
 | :--- | :--- |
 | **Language** | Python 3.11+ |
 | **Frontend / Dashboard** | Streamlit, Plotly Express |
-| **LLM Orchestration** | OpenAI Python SDK (configured for Groq API) |
-| **Data Validation** | Pydantic v2 |
-| **Database & ORM** | SQLite, SQLAlchemy |
+| **LLM Inference** | OpenAI Python SDK (configured for Groq API `openai/gpt-oss-20b`) |
+| **Data Contracts** | Pydantic v2 |
+| **Database & ORM** | SQLite (WAL Mode), SQLAlchemy |
 | **Ingestion API** | Google API Python Client (`google-api-python-client`) |
-| **Environment Management** | `pydantic-settings`, `python-dotenv` |
+| **Settings Management** | `pydantic-settings`, `python-dotenv` |
 
 ---
 
@@ -56,26 +58,28 @@ flowchart LR
 ```text
 brand-sentiment-monitor/
 ├── config/
-│   └── settings.py          # Environment settings management
+│   └── settings.py          # Environment settings & validation
 ├── src/
 │   ├── agents/
-│   │   ├── schemas.py       # Pydantic v2 output structures
-│   │   ├── sentiment_agent.py # Groq sentiment classifier
-│   │   └── response_agent.py  # PR crisis response generator
+│   │   ├── schemas.py       # Pydantic v2 dynamic output schemas
+│   │   ├── sentiment_agent.py # Groq sentiment & entity classifier
+│   │   ├── response_agent.py  # PR crisis mitigation draft engine
+│   │   └── qna_agent.py       # Telemetry Q&A synthesis agent
 │   ├── alerts/
-│   │   └── webhook_notifier.py # Slack notification engine
+│   │   └── webhook_notifier.py # Slack notification webhook
 │   ├── database/
-│   │   ├── connection.py    # Database connection & session setup
-│   │   └── models.py        # SQLAlchemy database models
+│   │   ├── connection.py    # Database engine & WAL pragma configuration
+│   │   └── models.py        # SQLAlchemy Indexed ORM models
 │   └── ingestion/
-│       ├── base.py          # Abstract collector interface
-│       ├── youtube_collector.py # YouTube Data API integration
-│       └── manager.py       # Aggregator engine
-├── .env.example             # Template environment file
-├── app.py                   # Streamlit interactive UI
-├── README.md                # Project documentation
+│       ├── base.py          # Abstract collector base class
+│       ├── youtube_collector.py # Video metadata & comment thread collector
+│       └── manager.py       # Multi-source ingestion manager
+├── .env.example             # Template environment configuration
+├── .gitignore               # Strict untracking of keys and databases
+├── app.py                   # Multi-tab Streamlit dashboard UI
+├── README.md                # System documentation
 ├── requirements.txt         # Project dependencies
-└── run_pipeline.py          # CLI runner for end-to-end processing
+└── run_pipeline.py          # CLI runner with batch execution & deduplication
 ```
 
 ---
@@ -110,11 +114,11 @@ brand-sentiment-monitor/
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables:**
+4. **Configure secrets:**
    ```bash
    cp .env.example .env
    ```
-   Open `.env` and configure your keys:
+   Edit `.env` with your API credentials:
    ```ini
    GROQ_API_KEY=gsk_your_groq_api_key_here
    YOUTUBE_API_KEY=your_youtube_api_key_here
@@ -126,17 +130,17 @@ brand-sentiment-monitor/
 
 ## Usage
 
-### 1. Run Pipeline via CLI
+### 1. Ingest Data via CLI
 
-Execute ingestion and AI analysis directly from your terminal:
+Fetch and process posts along with public comment threads directly from the command line:
 
 ```bash
-python run_pipeline.py --query "OpenAI" --limit 5
+python run_pipeline.py --query "Tesla Software Update" --limit 5
 ```
 
-### 2. Launch Streamlit Analytics Dashboard
+### 2. Launch Interactive Dashboard
 
-Start the web dashboard to inspect interactive analytics, filter records, and generate live PR mitigation drafts:
+Run the Streamlit web dashboard to access the visual analytics, test natural language telemetry Q&A, and view automated crisis responses:
 
 ```bash
 streamlit run app.py

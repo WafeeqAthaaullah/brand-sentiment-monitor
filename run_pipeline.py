@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 from datetime import datetime, timezone
 from sqlalchemy import select
@@ -74,6 +75,8 @@ def run_pipeline(query: str, limit: int = 5) -> None:
                 sentiment=analysis.sentiment,
                 sentiment_score=analysis.sentiment_score,
                 category=analysis.category,
+                key_entities=json.dumps(analysis.key_entities),
+                keywords=json.dumps(analysis.keywords),
                 severity_rating=analysis.severity_rating,
                 summary=analysis.summary,
             )

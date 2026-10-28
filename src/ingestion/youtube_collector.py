@@ -59,7 +59,30 @@ class YouTubeCollector(BaseCollector):
                 else:
                     published_at = datetime.now(timezone.utc)
 
-                content = f"{title}\n\n{description}".strip()
+                # Fetch top comments for video
+                comments_list: list[str] = []
+                try:
+                    comments_request = youtube.commentThreads().list(
+                        part="snippet",
+                        videoId=video_id,
+                        maxResults=5,
+                        textFormat="plainText",
+                    )
+                    comments_response = comments_request.execute()
+                    for c_item in comments_response.get("items", []):
+                        top_comment = (
+                            c_item.get("snippet", {})
+                            .get("topLevelComment", {})
+                            .get("snippet", {})
+                            .get("textDisplay", "")
+                        )
+                        if top_comment:
+                            comments_list.append(top_comment.strip())
+                except Exception as c_err:
+                    logger.debug("Could not fetch comments for video %s: %s", video_id, c_err)
+
+                comments_text = " // ".join(comments_list) if comments_list else "None"
+                content = f"Title: {title} | Description: {description} | Top Comments: {comments_text}".strip()
                 url = f"https://www.youtube.com/watch?v={video_id}"
 
                 results.append(

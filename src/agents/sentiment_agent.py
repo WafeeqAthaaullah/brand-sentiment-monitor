@@ -50,7 +50,10 @@ def analyze_post(content: str) -> SentimentAnalysis:
         "Analyze the provided post content and return a strict JSON object with these exact keys:\n"
         "- sentiment: One of 'Positive', 'Neutral', 'Negative'\n"
         "- sentiment_score: Float between -1.0 (most negative) and 1.0 (most positive)\n"
-        "- category: One of 'Product Quality', 'Customer Service', 'Outage/Bug', 'Pricing', 'General PR'\n"
+        "- category: Extract a concise, high-level category (2-3 words max, Title Case) that accurately captures the main issue or theme (e.g., 'Battery Degradation', 'UI Glitch', 'Customer Service')\n"
+        "- tags: A list of 2-4 granular topic tags\n"
+        "- key_entities: A list of key brands, products, competitors, or people mentioned\n"
+        "- keywords: Top 3-5 operational keywords\n"
         "- severity_rating: Integer from 1 (routine/trivial) to 10 (critical emergency/severe crisis)\n"
         "- summary: A concise one-sentence factual summary explaining the assessment."
     )
